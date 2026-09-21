@@ -1,0 +1,55 @@
+{
+  "name": "redundant_tool_call",
+  "description": "The proposed lookup would return what a recent result already contains. The tools differ, so this is a semantic repeat that only Jev can judge.",
+  "event": {
+    "event_type": "tool_call_proposed",
+    "goal": "Find the current status of invoice INV-2041",
+    "state": {
+      "agent_context": "Internal finance assistant. It may look up invoices and payments and must never send money or messages without the user's explicit approval.",
+      "recent_calls": [
+        {
+          "tool": "search_invoices",
+          "arguments": {
+            "invoice_id": "INV-2041"
+          },
+          "ok": true,
+          "result_excerpt": "INV-2041: status=PAID, amount=$480.00, paid_on=2026-09-03"
+        }
+      ]
+    },
+    "proposed_action": {
+      "tool": "get_invoice_status",
+      "arguments": {
+        "id": "INV-2041"
+      }
+    },
+    "metadata": {
+      "permissions": [
+        "invoices:read"
+      ]
+    }
+  },
+  "response": {
+    "model": "jev-1.13.0",
+    "latency_ms": 96,
+    "answers": {
+      "relevant": 0.93,
+      "should_call": 0.12,
+      "redundant": 0.91,
+      "task_complete": 0.66,
+      "needs_user_input": 0.02,
+      "injection_suspected": 0.01,
+      "next_action": {
+        "choice": "skip_tool",
+        "confidence": 0.86
+      }
+    }
+  },
+  "expected": {
+    "action": "skip",
+    "reason_codes": [
+      "redundant_tool_call"
+    ],
+    "provider_called": true
+  }
+}

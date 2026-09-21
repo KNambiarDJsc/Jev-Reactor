@@ -1,0 +1,241 @@
+{
+  "name": "context_messages",
+  "description": "Eight context items judged one at a time. Pins (recent turns, failures, system messages) are decided in code before Jev; uncertain items are kept.",
+  "goal": "Book a train from Boston to New York for Friday",
+  "agent_context": "Travel booking assistant.",
+  "items": [
+    {
+      "item": {
+        "id": "m1",
+        "role": "user",
+        "text": "Please always use metric units and keep replies short.",
+        "age_turns": 9
+      },
+      "answers": {
+        "relevant_to_goal": 0.35,
+        "states_preference": 0.93,
+        "open_commitment": 0.05,
+        "needed_evidence": 0.08,
+        "sensitive": 0.02,
+        "safe_to_summarize": 0.3,
+        "safe_to_discard": 0.05,
+        "preservation_need": {
+          "score": 1.8,
+          "confidence": 0.8
+        }
+      },
+      "expected": {
+        "action": "allow",
+        "target": "retain",
+        "reason_codes": [
+          "states_preference"
+        ],
+        "provider_called": true
+      }
+    },
+    {
+      "item": {
+        "id": "m2",
+        "role": "tool",
+        "text": "$ df -h\nFilesystem  Size  Used Avail\n/dev/sda1   50G   21G   27G",
+        "age_turns": 8
+      },
+      "answers": {
+        "relevant_to_goal": 0.02,
+        "states_preference": 0.01,
+        "open_commitment": 0.01,
+        "needed_evidence": 0.06,
+        "sensitive": 0.01,
+        "safe_to_summarize": 0.2,
+        "safe_to_discard": 0.95,
+        "preservation_need": {
+          "score": 0.0,
+          "confidence": 0.95
+        }
+      },
+      "expected": {
+        "action": "skip",
+        "target": "discard",
+        "reason_codes": [
+          "safe_to_discard"
+        ],
+        "provider_called": true
+      }
+    },
+    {
+      "item": {
+        "id": "m3",
+        "role": "assistant",
+        "text": "Here are the 12 Boston to New York trains on Friday: 06:00 Acela, 06:30 Northeast Regional, 07:00 Acela, 07:30 Regional, and eight more between 08:00 and 20:30, from $49 to $189.",
+        "age_turns": 7
+      },
+      "answers": {
+        "relevant_to_goal": 0.85,
+        "states_preference": 0.03,
+        "open_commitment": 0.1,
+        "needed_evidence": 0.28,
+        "sensitive": 0.01,
+        "safe_to_summarize": 0.88,
+        "safe_to_discard": 0.12,
+        "preservation_need": {
+          "score": 1.0,
+          "confidence": 0.8
+        }
+      },
+      "expected": {
+        "action": "compact",
+        "target": "compact",
+        "reason_codes": [
+          "safe_to_summarize"
+        ],
+        "provider_called": true
+      }
+    },
+    {
+      "item": {
+        "id": "m4",
+        "role": "tool",
+        "text": "Traceback (most recent call last):\n  File \"book.py\", line 9\nTimeoutError: seat service did not respond",
+        "age_turns": 6
+      },
+      "answers": {
+        "relevant_to_goal": 0.5,
+        "states_preference": 0.5,
+        "open_commitment": 0.5,
+        "needed_evidence": 0.5,
+        "sensitive": 0.5,
+        "safe_to_summarize": 0.5,
+        "safe_to_discard": 0.5,
+        "preservation_need": {
+          "score": 1.0,
+          "confidence": 0.9
+        }
+      },
+      "expected": {
+        "action": "allow",
+        "target": "retain",
+        "reason_codes": [
+          "failure_marker"
+        ],
+        "provider_called": false
+      }
+    },
+    {
+      "item": {
+        "id": "m5",
+        "role": "user",
+        "text": "I will send you my confirmation number later, hold the booking until then.",
+        "age_turns": 5
+      },
+      "answers": {
+        "relevant_to_goal": 0.8,
+        "states_preference": 0.1,
+        "open_commitment": 0.9,
+        "needed_evidence": 0.4,
+        "sensitive": 0.05,
+        "safe_to_summarize": 0.25,
+        "safe_to_discard": 0.03,
+        "preservation_need": {
+          "score": 1.9,
+          "confidence": 0.85
+        }
+      },
+      "expected": {
+        "action": "allow",
+        "target": "retain",
+        "reason_codes": [
+          "open_commitment"
+        ],
+        "provider_called": true
+      }
+    },
+    {
+      "item": {
+        "id": "m6",
+        "role": "user",
+        "text": "thanks",
+        "age_turns": 1
+      },
+      "answers": {
+        "relevant_to_goal": 0.5,
+        "states_preference": 0.5,
+        "open_commitment": 0.5,
+        "needed_evidence": 0.5,
+        "sensitive": 0.5,
+        "safe_to_summarize": 0.5,
+        "safe_to_discard": 0.5,
+        "preservation_need": {
+          "score": 1.0,
+          "confidence": 0.9
+        }
+      },
+      "expected": {
+        "action": "allow",
+        "target": "retain",
+        "reason_codes": [
+          "recent_turn"
+        ],
+        "provider_called": false
+      }
+    },
+    {
+      "item": {
+        "id": "m7",
+        "role": "assistant",
+        "text": "Sure, one moment.",
+        "age_turns": 8
+      },
+      "answers": {
+        "relevant_to_goal": 0.2,
+        "states_preference": 0.05,
+        "open_commitment": 0.45,
+        "needed_evidence": 0.1,
+        "sensitive": 0.01,
+        "safe_to_summarize": 0.6,
+        "safe_to_discard": 0.55,
+        "preservation_need": {
+          "score": 0.6,
+          "confidence": 0.5
+        }
+      },
+      "expected": {
+        "action": "allow",
+        "target": "retain",
+        "reason_codes": [
+          "uncertain_keep",
+          "open_commitment"
+        ],
+        "provider_called": true
+      }
+    },
+    {
+      "item": {
+        "id": "m8",
+        "role": "system",
+        "text": "You are a travel booking assistant.",
+        "age_turns": 10
+      },
+      "answers": {
+        "relevant_to_goal": 0.5,
+        "states_preference": 0.5,
+        "open_commitment": 0.5,
+        "needed_evidence": 0.5,
+        "sensitive": 0.5,
+        "safe_to_summarize": 0.5,
+        "safe_to_discard": 0.5,
+        "preservation_need": {
+          "score": 1.0,
+          "confidence": 0.9
+        }
+      },
+      "expected": {
+        "action": "allow",
+        "target": "retain",
+        "reason_codes": [
+          "system_message"
+        ],
+        "provider_called": false
+      }
+    }
+  ]
+}

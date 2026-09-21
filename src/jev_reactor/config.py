@@ -30,7 +30,6 @@ DEFAULT_SENSITIVE_KEYS = (
     "private_key",
     "privatekey",
     "bearer",
-    "session_id",
     "access_key",
 )
 
@@ -117,6 +116,8 @@ class ReactorConfig(BaseModel):
     )
     breaker: BreakerConfig = Field(default_factory=BreakerConfig)
     redaction: RedactionConfig = Field(default_factory=RedactionConfig)
+    #: if set, only these dotted state paths are sent to the provider (a field allowlist)
+    state_allowlist: list[str] | None = None
     #: refuse to send more than this many characters of state; oversized state is a
     #: documented accuracy hazard ("context rot"), not just a limit
     max_state_chars: int = Field(default=24_000, ge=256)
