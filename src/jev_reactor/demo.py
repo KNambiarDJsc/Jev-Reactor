@@ -120,10 +120,18 @@ class ScenarioProvider:
         probe = Reactor(MockProvider(), pack=pack, policy=None, config=cfg)  # only for new_event
         self._answers: dict[str, dict[str, Any]] = {}
         self._models: dict[str, tuple[str, float]] = {}
+        self._names: dict[str, str] = {}
         for fx in scenarios:
             ev = _event_from(probe, fx.event)
             state, _ = build_provider_state(ev, pack, cfg, redactor)
             key = canonical_json(state)
+            if key in self._answers:
+                other = next(n for n, k in self._names.items() if k == key)
+                raise ReactorError(
+                    f"scenarios {other!r} and {fx.name!r} produce identical provider state, so a "
+                    "state-keyed mock cannot tell them apart; make their goals or arguments differ"
+                )
+            self._names[fx.name] = key
             self._answers[key] = fx.answers
             self._models[key] = (fx.model, fx.latency_ms)
         self.calls = 0

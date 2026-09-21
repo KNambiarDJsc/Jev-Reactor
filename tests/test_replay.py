@@ -235,7 +235,7 @@ async def test_report_summarises_only_what_was_recorded(run_file: Path) -> None:
     assert rep.mean_question_count == 7  # every provider call carried all seven questions
     assert rep.redundant_call_rate == pytest.approx(1 / 9)
     assert rep.low_confidence_rate == pytest.approx(1 / 8)  # only the routing Choice at 0.31
-    assert rep.models == {"jev-1.13.0": 7, "mock-1.0": 1}
+    assert rep.models == {"mock-fixture": 7, "mock-1.0": 1}
     assert rep.provider_latency_ms["p95"] is not None
 
 

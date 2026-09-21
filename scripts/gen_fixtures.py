@@ -26,7 +26,11 @@ PAID = {
 }
 
 
-def resp(answers: dict[str, Any], model: str = "jev-1.13.0", latency: float = 96) -> dict[str, Any]:
+# Fixture answers are hand-written to look like Jev output. They are NOT API responses, so
+# they carry a model name that says so and no latency (a made-up number would be a claim).
+def resp(
+    answers: dict[str, Any], model: str = "mock-fixture", latency: float = 0.0
+) -> dict[str, Any]:
     return {"model": model, "latency_ms": latency, "answers": answers}
 
 
@@ -213,7 +217,13 @@ TOOL_FIXTURES: dict[str, dict[str, Any]] = {
             "The routing Choice cannot pick an option. Semantic ambiguity goes to a stronger "
             "model, not to a coin flip."
         ),
-        "event": tool_event(STATUS_GOAL, "search_invoices", {"invoice_id": "INV-2041"}, [], READ),
+        "event": tool_event(
+            "Find the current status of invoice INV-2044",
+            "search_invoices",
+            {"invoice_id": "INV-2044"},
+            [],
+            READ,
+        ),
         "response": resp(
             {
                 "relevant": 0.88,
@@ -236,7 +246,13 @@ TOOL_FIXTURES: dict[str, dict[str, Any]] = {
             "Every Noul says call it, but the Choice confidently says skip. Separate questions "
             "are not guaranteed to agree, so the policy escalates instead of trusting either."
         ),
-        "event": tool_event(STATUS_GOAL, "search_invoices", {"invoice_id": "INV-2041"}, [], READ),
+        "event": tool_event(
+            "Find the current status of invoice INV-2043",
+            "search_invoices",
+            {"invoice_id": "INV-2043"},
+            [],
+            READ,
+        ),
         "response": resp(
             {
                 "relevant": 0.93,

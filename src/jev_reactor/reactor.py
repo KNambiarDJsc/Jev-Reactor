@@ -430,7 +430,7 @@ class Reactor:
             except ProviderError as exc:
                 self.breaker.record_failure(exc)
                 return _Outcome("error", error=exc)
-            except asyncio.CancelledError:
+            except (asyncio.CancelledError, ConfigError):
                 raise
             except Exception as exc:
                 err = ProviderError(f"unexpected provider failure: {type(exc).__name__}")

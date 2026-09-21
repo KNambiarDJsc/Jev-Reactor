@@ -14,7 +14,7 @@ ignore = [
 
 [lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S108", "PT018", "E501"]
-"examples/**" = ["S106"]
+"examples/**" = ["S106", "E501", "PT018"]
 "scripts/**" = ["E501", "S101"]
 "src/jev_reactor/cli.py" = ["S102", "B904"]
 

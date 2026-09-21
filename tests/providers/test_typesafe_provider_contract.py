@@ -284,11 +284,29 @@ async def test_sdk_retry_budget_is_bounded_by_the_deadline() -> None:
 # --------------------------------------------------------------------------- secrets
 
 
-def test_missing_api_key_is_a_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_api_key_fails_fast_with_a_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
-    provider = TypeSafeProvider(settings=TypeSafeSettings.from_env({}))
     with pytest.raises(MissingApiKeyError, match="TYPESAFE_API_KEY"):
-        asyncio.run(call(provider))
+        TypeSafeProvider(settings=TypeSafeSettings.from_env({}))
+
+
+async def test_a_config_error_is_not_swallowed_as_a_provider_outage() -> None:
+    from jev_reactor.errors import ConfigError
+    from jev_reactor.policy import RuleChainPolicy
+    from jev_reactor.providers.mock import MockProvider
+    from jev_reactor.questions import QuestionPack
+    from jev_reactor.reactor import Reactor
+
+    pack = QuestionPack(
+        id="p", questions={"q": QuestionSpec(id="q", type="noul", instructions="Is it?")}
+    )
+    reactor = Reactor(
+        MockProvider(raises=[ConfigError("bad configuration")]),
+        pack=pack,
+        policy=RuleChainPolicy([], policy_id="p"),
+    )
+    with pytest.raises(ConfigError, match="bad configuration"):
+        await reactor.decide({"state": {}})
 
 
 async def test_neither_key_nor_state_leaks_into_logs_or_errors(

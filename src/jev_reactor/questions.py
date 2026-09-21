@@ -130,7 +130,14 @@ class QuestionPack(BaseModel):
         for qid, raw in (data.pop("questions", None) or {}).items():
             if not isinstance(raw, Mapping):
                 raise PackError(f"question {qid!r} must be a mapping")
-            questions[qid] = QuestionSpec(id=qid, **raw)
+            try:
+                questions[qid] = QuestionSpec(id=qid, **raw)
+            except ValidationError as exc:
+                details = "; ".join(
+                    f"questions.{qid}.{'.'.join(str(x) for x in e['loc']) or 'spec'}: {e['msg']}"
+                    for e in exc.errors()
+                )
+                raise PackError(details) from exc
         return cls(
             questions=questions,
             state_paths=list(state.get("paths", data.pop("state_paths", []))),
@@ -153,6 +160,8 @@ def load_pack(path: str | Path) -> QuestionPack:
         return QuestionPack.from_dict(data)
     except ValidationError as exc:
         raise PackError(f"{p}: " + "; ".join(_format_errors(exc))) from exc
+    except PackError as exc:
+        raise PackError(f"{p}: {exc}") from exc
     except (TypeError, ValueError) as exc:
         raise PackError(f"{p}: {exc}") from exc
 

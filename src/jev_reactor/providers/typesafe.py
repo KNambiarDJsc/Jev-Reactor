@@ -173,6 +173,8 @@ class TypeSafeProvider:
         include_raw: bool = False,
     ) -> None:
         self.settings = settings or TypeSafeSettings.from_env()
+        if client is None and self.settings.api_key is None:
+            raise MissingApiKeyError()  # a config error must not look like an outage
         self._client = client
         self._owns_client = client is None
         self.include_raw = include_raw

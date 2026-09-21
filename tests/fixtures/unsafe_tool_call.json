@@ -31,8 +31,8 @@
     }
   },
   "response": {
-    "model": "jev-1.13.0",
-    "latency_ms": 96,
+    "model": "mock-fixture",
+    "latency_ms": 0.0,
     "answers": {
       "relevant": 0.99,
       "should_call": 0.99,
