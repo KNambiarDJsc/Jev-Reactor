@@ -1,0 +1,21 @@
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PT", "RUF", "S", "ASYNC"]
+ignore = [
+  "S101",   # assert is fine in tests and invariants
+  "S311",   # random is used for jitter/ids, not security
+  "RUF012", # pydantic model defaults
+  "ASYNC109", # the provider interface deliberately takes a timeout parameter
+  "B008",   # typer.Option in defaults
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108", "PT018"]
+"examples/**" = ["S106"]
+"src/jev_reactor/cli.py" = ["S102", "B904"]
+
+[format]
+quote-style = "double"
