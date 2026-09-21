@@ -90,3 +90,16 @@ def test_the_readme_makes_no_performance_or_accuracy_claims() -> None:
         "cannot hallucinate",
     ):
         assert phrase not in text
+
+
+def test_the_ci_workflow_is_valid_yaml_with_the_expected_jobs() -> None:
+    """GitHub silently refuses to run a workflow that does not parse; catch it locally."""
+    import yaml
+
+    workflow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    )
+    assert {"test", "audit", "build"} <= set(workflow["jobs"])
+    assert workflow["permissions"] == {"contents": "read"}
+    for job in workflow["jobs"].values():
+        assert job["steps"], "a job with no steps does nothing"

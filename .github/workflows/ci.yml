@@ -32,7 +32,7 @@ jobs:
           uv run ruff format --check .
       - name: Type check (strict)
         run: uv run mypy
-      - name: Tests (offline: no network, no API key)
+      - name: Tests (offline, no network, no API key)
         run: uv run pytest -q
 
   audit:
