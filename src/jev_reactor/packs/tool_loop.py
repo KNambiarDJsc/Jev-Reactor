@@ -264,22 +264,22 @@ def tool_loop_pack(tools: Sequence[ToolSpec] = ()) -> QuestionPack:
         examples=[
             PackExample(
                 name="safe_tool_call",
-                fixture="tests/fixtures/safe_tool_call.json",
+                fixture="safe_tool_call.json",
                 expect_action="allow",
             ),
             PackExample(
                 name="redundant_tool_call",
-                fixture="tests/fixtures/redundant_tool_call.json",
+                fixture="redundant_tool_call.json",
                 expect_action="skip",
             ),
             PackExample(
                 name="ambiguous_tool_call",
-                fixture="tests/fixtures/ambiguous_tool_call.json",
+                fixture="ambiguous_tool_call.json",
                 expect_action="review",
             ),
             PackExample(
                 name="complete_task",
-                fixture="tests/fixtures/complete_task.json",
+                fixture="complete_task.json",
                 expect_action="stop",
             ),
         ],

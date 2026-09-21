@@ -178,6 +178,10 @@ def test_init_then_run_works_from_the_scaffold(tmp_path: Path) -> None:
     ran = invoke("run", "examples/tool_loop.py", "--mock")
     assert ran.exit_code == 0, out(ran)
     assert "Executed by the demo tool server: ['search_invoices']" in out(ran)
+    # the shipped packs must validate in the scaffold too, where fixtures live in ./fixtures
+    for pack in ("tool-loop", "context-retention", "agent-loop"):
+        checked = invoke("validate-pack", f"packs/{pack}.yaml")
+        assert checked.exit_code == 0, out(checked)
 
 
 # ---------------------------------------------------------------------------- packs
@@ -437,3 +441,21 @@ def test_bench_measures_locally_and_makes_no_latency_claim() -> None:
 def test_bench_live_needs_a_key() -> None:
     result = invoke("bench", "--n", "5", "--live")
     assert result.exit_code == 2 and "TYPESAFE_API_KEY is not set" in out(result)
+
+
+def test_a_pack_example_that_points_nowhere_still_fails_validation(tmp_path: Path) -> None:
+    body = "\n".join(
+        [
+            "id: p",
+            "questions:",
+            "  q:",
+            "    type: noul",
+            "    instructions: Is it done?",
+            "examples:",
+            "  - {name: ghost, fixture: no_such_fixture.json, expect_action: allow}",
+            "",
+        ]
+    )
+    path = write_pack(tmp_path, body)
+    result = invoke("validate-pack", str(path))
+    assert result.exit_code == 1 and "example-fixture-missing" in out(result)

@@ -228,12 +228,7 @@ def validate_pack(
     """Check a pack: schema, question shapes, and the lint rules (see docs/question-packs.md)."""
     pack = load_pack(file)
     issues = lint_pack(pack)
-    for base in _example_bases(file):
-        found = [i for i in lint_examples(pack, base) if i.code == "example-fixture-missing"]
-        if not found:
-            break
-    else:
-        issues += found
+    issues += lint_examples(pack, _example_bases(file))
     errors = [i for i in issues if i.severity == "error"]
     warnings = [i for i in issues if i.severity == "warning"]
     for issue in issues:

@@ -52,5 +52,15 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/jev_reactor"]
 
+# `jev-reactor init` copies these out of the installed package, so the README's first screen
+# works after a plain `pip install` (no repository checkout needed).
+[tool.hatch.build.targets.wheel.force-include]
+"examples" = "jev_reactor/_data/examples"
+"tests/fixtures" = "jev_reactor/_data/fixtures"
+"packs" = "jev_reactor/_data/packs"
+
+[tool.hatch.build]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
 [tool.hatch.build.targets.sdist]
 include = ["src/jev_reactor", "tests", "packs", "examples", "docs", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md"]

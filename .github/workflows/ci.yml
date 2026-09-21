@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync --extra dev --python ${{ matrix.python }}
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Type check (strict)
+        run: uv run mypy
+      - name: Tests (offline: no network, no API key)
+        run: uv run pytest -q
+
+  audit:
+    name: dependency vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra dev
+      # pip-audit reports known vulnerabilities in the installed dependency set. The project
+      # itself is not on PyPI yet, so it is skipped with a note rather than failing the run.
+      - run: uv run pip-audit
+
+  build:
+    name: build and smoke-test the wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+      - name: Install the wheel into a clean environment and run the README flow
+        run: |
+          uv venv /tmp/clean --python 3.11
+          uv pip install --python /tmp/clean/bin/python dist/*.whl
+          mkdir /tmp/project && cd /tmp/project
+          /tmp/clean/bin/jev-reactor --help
+          /tmp/clean/bin/jev-reactor init
+          /tmp/clean/bin/jev-reactor validate-pack packs/tool-loop.yaml
+          /tmp/clean/bin/jev-reactor run examples/tool_loop.py --mock
+          /tmp/clean/bin/jev-reactor replay examples/replay.jsonl --policy strict --dry-run

@@ -249,3 +249,21 @@ async def test_the_fake_server_has_no_real_side_effects() -> None:
     unknown = await server.call(ToolCall(name="nope"))
     assert unknown["isError"] is True
     assert all("annotations" in t and "inputSchema" in t for t in server.list_tools())
+
+
+async def test_sessions_do_not_leak_state_into_each_other() -> None:
+    """Cross-user isolation: one gate, two conversations, nothing shared between them."""
+    server, gate, provider = make_gate(SAFE)
+    alice = gate.session("Alice's invoice", permissions=PERMS, agent_context="ALICE-ONLY-CONTEXT")
+    bob = gate.session("Bob's invoice", permissions=PERMS)
+    await alice.call("search_invoices", {"invoice_id": "INV-2041"}, executor=server.call)
+
+    assert alice.history and bob.history == []
+    # Bob making the identical call is NOT an exact duplicate of Alice's call
+    bobs = await bob.call("search_invoices", {"invoice_id": "INV-2041"}, executor=server.call)
+    assert bobs.action == "allow" and bobs.executed
+    assert provider.call_count == 2, "Bob's call went to Jev; it was not skipped as a duplicate"
+    # and nothing of Alice's conversation was ever in the state sent for Bob
+    assert "ALICE-ONLY-CONTEXT" not in str(provider.calls[1].state)
+    assert "Alice" not in str(provider.calls[1].state)
+    assert alice.stream_id != bob.stream_id

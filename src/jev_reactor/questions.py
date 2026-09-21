@@ -9,7 +9,7 @@ reports when it differs.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -306,11 +306,29 @@ def lint_pack(pack: QuestionPack) -> list[LintIssue]:
     return issues
 
 
-def lint_examples(pack: QuestionPack, base_dir: Path) -> list[LintIssue]:
-    """Check that fixture files named by the pack's examples exist."""
+def find_fixture(name: str, bases: Sequence[Path]) -> Path | None:
+    """Locate an example fixture: as given, or in ``fixtures/`` / ``tests/fixtures/``.
+
+    Both layouts exist in practice: a repository checkout keeps fixtures under
+    ``tests/fixtures`` and ``jev-reactor init`` scaffolds them into ``fixtures/``.
+    """
+    for base in bases:
+        for candidate in (
+            base / name,
+            base / "fixtures" / name,
+            base / "tests" / "fixtures" / name,
+        ):
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def lint_examples(pack: QuestionPack, bases: Path | Sequence[Path]) -> list[LintIssue]:
+    """Check that fixture files named by the pack's examples exist somewhere sensible."""
+    search = [bases] if isinstance(bases, Path) else list(bases)
     issues = []
     for ex in pack.examples:
-        if ex.fixture and not (base_dir / ex.fixture).is_file():
+        if ex.fixture and find_fixture(ex.fixture, search) is None:
             issues.append(
                 LintIssue("example-fixture-missing", "error", f"{ex.name}: {ex.fixture} not found")
             )
