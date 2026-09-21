@@ -145,6 +145,7 @@ class MockProvider:
         respond: Callable[[Any, dict[str, QuestionSpec]], Mapping[str, AnswerLike]] | None = None,
         model: str = "mock-1.0",
         latency: float = 0.0,
+        reported_latency_ms: float | None = None,
         raises: Sequence[BaseException | None] = (),
         respect_timeout: bool = True,
     ) -> None:
@@ -153,14 +154,24 @@ class MockProvider:
         self.respond = respond
         self.model = model
         self.latency = latency
+        self.reported_latency_ms = reported_latency_ms
         self._raises = list(raises)
         self.respect_timeout = respect_timeout
         self.calls: list[MockCall] = []
 
     @classmethod
-    def from_fixture(cls, path: str | Path, **kwargs: Any) -> MockProvider:
+    def from_fixture(
+        cls, path: str | Path, *, simulate_latency: bool = False, **kwargs: Any
+    ) -> MockProvider:
+        """Answer from a fixture. The recorded latency is *reported*, and only slept if asked."""
         fx = load_fixture(path)
-        return cls(fx.answers, model=fx.model, latency=fx.latency_ms / 1000.0, **kwargs)
+        return cls(
+            fx.answers,
+            model=fx.model,
+            latency=fx.latency_ms / 1000.0 if simulate_latency else 0.0,
+            reported_latency_ms=fx.latency_ms,
+            **kwargs,
+        )
 
     @property
     def call_count(self) -> int:
@@ -204,6 +215,10 @@ class MockProvider:
             request_id=f"mock-{len(self.calls)}",
             model=self.model,
             answers=answers,
-            latency_ms=self.latency * 1000.0,
+            latency_ms=(
+                self.reported_latency_ms
+                if self.reported_latency_ms is not None
+                else self.latency * 1000.0
+            ),
             usage={"input_tokens": estimate_tokens(state), "output_tokens": 0},
         )

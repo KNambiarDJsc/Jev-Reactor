@@ -306,12 +306,14 @@ class ToolLoopPolicy(RuleChainPolicy):
         thresholds: ToolLoopThresholds | None = None,
         *,
         policy_id: str = "tool-loop/default",
+        hard_rules: bool = True,
     ) -> None:
         self.tools: dict[str, ToolSpec] = {t.name: t for t in tools}
         self.t = thresholds or ToolLoopThresholds()
+        self._hard_rules = hard_rules
         super().__init__(
             rules=self._build_rules(),
-            pre_rules=self._build_pre_rules(),
+            pre_rules=self._build_pre_rules() if hard_rules else [],
             policy_id=policy_id,
             risk_tier=self._tier,
         )
@@ -322,6 +324,18 @@ class ToolLoopPolicy(RuleChainPolicy):
             raise ValueError(f"unknown policy preset {name!r}; choose from {sorted(PRESETS)}")
         return cls(tools, PRESETS[name], policy_id=f"tool-loop/{name}")
 
+    @classmethod
+    def for_replay(cls, name: str = "default") -> ToolLoopPolicy:
+        """Thresholds only. For comparing threshold sets over a recording.
+
+        A replay has no tool inventory, and every recorded provider call already passed the
+        hard rules, so re-running them here would wrongly change every decision. **Never use
+        this to gate live calls**: it has no allowlist, permissions or approvals.
+        """
+        if name not in PRESETS:
+            raise ValueError(f"unknown policy preset {name!r}; choose from {sorted(PRESETS)}")
+        return cls((), PRESETS[name], policy_id=f"tool-loop/{name}+replay", hard_rules=False)
+
     # -- helpers ---------------------------------------------------------------------
 
     def _spec(self, event: ReactorEvent) -> ToolSpec | None:
@@ -331,7 +345,10 @@ class ToolLoopPolicy(RuleChainPolicy):
 
     def _tier(self, event: ReactorEvent) -> str:
         spec = self._spec(event)
-        return spec.risk if spec else "irreversible"  # unknown means most conservative
+        if spec:
+            return spec.risk
+        # unknown tool: most conservative live; neutral in a replay that has no inventory
+        return "irreversible" if self._hard_rules else "write"
 
     def _skip(self, event: ReactorEvent, *reasons: str, **meta: Any) -> ActionDecision:
         """A skip, unless the suppression budget says we have skipped too many times in a row."""

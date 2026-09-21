@@ -349,14 +349,16 @@ class Reactor:
     def _build_state(
         self, ev: ReactorEvent, pack: QuestionPack
     ) -> tuple[dict[str, Any], RedactionReport]:
-        raw = pack.build_state(ev)
-        if self.config.state_allowlist is not None:
-            raw = allowlist_state(raw, self.config.state_allowlist)
-        redacted, report = self.redactor.redact(raw)
-        bounded = bound_state(
-            redacted, max_chars=self.config.max_state_chars, trim_lists=pack.trim_lists
-        )
-        return bounded, report
+        return build_provider_state(ev, pack, self.config, self.redactor)
+
+    def preview_state(
+        self, event: ReactorEvent | Mapping[str, Any], question_pack: QuestionPack | None = None
+    ) -> dict[str, Any]:
+        """The exact, redacted, bounded state the provider would receive for ``event``."""
+        pack = question_pack or self.pack
+        if pack is None:
+            raise ConfigError("no question pack: pass question_pack= or set Reactor(pack=...)")
+        return self._build_state(self._coerce_event(event), pack)[0]
 
     def _pre_check(self, pol: Policy, ev: ReactorEvent) -> ActionDecision | None:
         hook = getattr(pol, "pre_check", None)
@@ -604,6 +606,18 @@ class Reactor:
         await self._emit(late)
 
 
+def build_provider_state(
+    ev: ReactorEvent, pack: QuestionPack, config: ReactorConfig, redactor: Redactor
+) -> tuple[dict[str, Any], RedactionReport]:
+    """pack state builder -> optional field allowlist -> redaction -> size bound."""
+    raw = pack.build_state(ev)
+    if config.state_allowlist is not None:
+        raw = allowlist_state(raw, config.state_allowlist)
+    redacted, report = redactor.redact(raw)
+    bounded = bound_state(redacted, max_chars=config.max_state_chars, trim_lists=pack.trim_lists)
+    return bounded, report
+
+
 def _policy_id(pol: Any) -> str:
     return str(getattr(pol, "policy_id", type(pol).__name__))
 
@@ -628,4 +642,4 @@ async def _aiter(source: Any) -> AsyncGenerator[Any, None]:
             await asyncio.sleep(0)  # let decisions and the consumer make progress
 
 
-__all__ = ["Reactor", "ReactorError", "default_stream_key"]
+__all__ = ["Reactor", "ReactorError", "build_provider_state", "default_stream_key"]
