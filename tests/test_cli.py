@@ -459,3 +459,14 @@ def test_a_pack_example_that_points_nowhere_still_fails_validation(tmp_path: Pat
     path = write_pack(tmp_path, body)
     result = invoke("validate-pack", str(path))
     assert result.exit_code == 1 and "example-fixture-missing" in out(result)
+
+
+def test_long_paths_are_never_split_across_lines(
+    run_copy: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A path broken mid-name cannot be copied; regression for a narrow terminal (Linux CI)."""
+    monkeypatch.setenv("COLUMNS", "40")
+    result = invoke("label", str(run_copy), "evt_demo_01", "--expected", "allow")
+    assert result.exit_code == 0
+    assert str(run_copy) + ".labels.jsonl" in result.output.replace("\n", "")
+    assert ".labels.jsonl" in result.output and "labels .jsonl" not in result.output

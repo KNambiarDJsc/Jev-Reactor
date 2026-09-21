@@ -63,7 +63,7 @@ app = typer.Typer(
     add_completion=False,
     rich_markup_mode=None,
 )
-console = Console()
+console = Console(soft_wrap=True)  # never split a path or an id across lines
 err_console = Console(stderr=True, soft_wrap=True)  # never wrap a path mid-word
 
 F = TypeVar("F", bound=Callable[..., Any])
