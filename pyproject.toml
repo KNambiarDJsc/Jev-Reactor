@@ -1,19 +1,26 @@
 [project]
 name = "jev-reactor"
-version = "0.1.0"
-description = "An open-source event-driven runtime for typed Jev decisions"
-readme = "README.md"
+version = "0.2.0"
+description = "Real-time typed decisions around TypeSafe's Jev model, with an MCP gateway that decides every tool call before it runs."
+dynamic = ["readme"]
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Jev Reactor contributors" }]
-keywords = ["jev", "typesafe", "system-one", "decision", "agents", "policy"]
+keywords = [
+  "jev", "typesafe", "system-one", "decision", "agents", "policy",
+  "mcp", "model-context-protocol", "ai-safety", "tool-calling", "guardrails",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: Apache Software License",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Security",
   "Typing :: Typed",
 ]
 dependencies = [
@@ -28,26 +35,48 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+mcp = [
+  # v2 speaks the 2026-07-28 spec revision and every earlier one from the same server.
+  "mcp>=2.2,<3",
+  # imported directly (argument validation), so declared here rather than left transitive
+  "jsonschema>=4.20",
+]
 dev = [
+  "jev-reactor[mcp]",
   "pytest>=8.0",
   "pytest-asyncio>=0.23",
   "hypothesis>=6.100",
   "ruff>=0.6",
   "mypy>=1.10",
   "types-PyYAML",
+  "types-jsonschema",
   "pip-audit>=2.7",
 ]
 
 [project.scripts]
 jev-reactor = "jev_reactor.cli:app"
+jev-reactor-mcp = "jev_reactor.mcp_entry:main"
 
 [project.urls]
 Homepage = "https://github.com/KNambiarDJsc/Jev-Reactor"
+Documentation = "https://github.com/KNambiarDJsc/Jev-Reactor/tree/main/docs"
+Changelog = "https://github.com/KNambiarDJsc/Jev-Reactor/blob/main/CHANGELOG.md"
 Issues = "https://github.com/KNambiarDJsc/Jev-Reactor/issues"
+Security = "https://github.com/KNambiarDJsc/Jev-Reactor/blob/main/SECURITY.md"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27", "hatch-fancy-pypi-readme>=24.1"]
 build-backend = "hatchling.build"
+
+# PyPI renders the README on its own domain, where relative links (docs/..., LICENSE) 404.
+# Rewrite them to absolute GitHub URLs at build time; the README in the repo stays as is.
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [{ path = "README.md" }]
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\]\((?!https?://|#|mailto:)([^)\s]+)\)'
+replacement = '](https://github.com/KNambiarDJsc/Jev-Reactor/blob/main/\1)'
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jev_reactor"]

@@ -5,7 +5,44 @@ All notable changes are recorded here. The format follows
 [Semantic Versioning](https://semver.org/) once 1.0 is reached (until then, minor versions may
 change the API).
 
-## [0.1.0] - unreleased
+## [0.2.0] - 2026-09-21
+
+First release on PyPI. (0.1.0 was only ever tagged in Git and was never published.)
+
+### Added
+
+- **MCP gateway** (`jev-reactor-mcp`, also `jev-reactor mcp ...`; install `jev-reactor[mcp]`):
+  a real MCP server, built on the official SDK v2, that fronts other MCP servers (stdio or
+  Streamable HTTP) and decides every `tools/call` before forwarding it. A held-back call never
+  reaches the downstream server and returns an `isError` result with a plain reason.
+  - allowlist (unlisted tools are neither listed nor callable), argument validation against the
+    downstream JSON Schema, hard rules, Jev, then policy; `observe` / `guard` / `enforce` modes;
+  - approval for irreversible actions through MCP elicitation on both the 2026-07-28 revision
+    (input-required results with sealed, per-call request state) and the handshake revisions;
+    approval is never read from arguments or `_meta`;
+  - description quarantine (`quarantine` / `hide` / `allow`), truncation and host-written
+    descriptions; server hints can only raise a risk tier;
+  - per-conversation sessions (`_meta["io.jev-reactor/session"]`, `Mcp-Session-Id`);
+  - HTTP serving on loopback by default, DNS-rebinding protection, and a bearer token that is
+    mandatory for `--allow-remote`;
+  - `jev-reactor-mcp init | check | serve`, a safe demo downstream server, `docs/mcp.md`.
+- Tests over the real protocol: in-memory client to gateway to demo server, a real stdio
+  subprocess, and a real HTTP listener.
+- Release plumbing: PEP 639 license metadata, PyPI-safe README links, a trusted-publishing
+  workflow.
+
+### Changed
+
+- `GateSession` keeps a bounded history (`history_max`, default 50) instead of growing forever.
+
+### Notes
+
+- The MCP SDK is an optional extra; `import jev_reactor` does not import it (tested).
+- Live Jev has not been exercised by this project's automated tests or CI.
+- Not included: advisory MCP decision tools, and proxying of downstream resources, prompts,
+  sampling and server-initiated elicitation. See `docs/mcp.md`.
+
+## [0.1.0] - 2026-09-21 (Git only, never published to PyPI)
 
 First version: a local runtime and developer CLI.
 
@@ -47,4 +84,4 @@ First version: a local runtime and developer CLI.
   [docs/design-notes.md](docs/design-notes.md). Notably: no "Jev Distill" pipeline (TypeSafe's
   terms prohibit training on Jev output), `httpx2.MockTransport` instead of `respx`, and a
   digest-only default for persisted state.
-- Not on PyPI yet. Install from the repository.
+- Was installable from the repository only.

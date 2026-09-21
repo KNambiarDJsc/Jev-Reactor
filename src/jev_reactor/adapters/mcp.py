@@ -107,9 +107,22 @@ class GuardedResult:
 Executor = Callable[[ToolCall], Awaitable[Any]]
 
 
+def _as_mapping(result: Any) -> Mapping[str, Any]:
+    """A tool result as a plain mapping: dicts as-is, SDK models via ``model_dump``."""
+    if isinstance(result, Mapping):
+        return result
+    dump = getattr(result, "model_dump", None)
+    if callable(dump):
+        dumped = dump(by_alias=True, mode="json")
+        if isinstance(dumped, Mapping):
+            return dumped
+    return {"content": [{"type": "text", "text": str(result)}]}
+
+
 def _excerpt(result: Any, limit: int = 500) -> str:
     """Flatten an MCP-style result to text for the trace. Bounded; treated as untrusted."""
-    if isinstance(result, Mapping) and isinstance(result.get("content"), list):
+    result = _as_mapping(result)
+    if isinstance(result.get("content"), list):
         parts = [str(c.get("text", "")) for c in result["content"] if isinstance(c, Mapping)]
         text = " ".join(p for p in parts if p)
     else:
@@ -128,6 +141,7 @@ class GateSession:
     agent_context: str | None = None
     history: list[dict[str, Any]] = field(default_factory=list)
     consecutive_skips: int = 0
+    history_max: int = 50
     stream_id: str = field(default_factory=lambda: f"gate_{uuid.uuid4().hex[:8]}")
 
     async def propose(self, call: ToolCall, *, approved: bool = False) -> GateVerdict:
@@ -155,6 +169,19 @@ class GateSession:
         self.consecutive_skips = self.consecutive_skips + 1 if suppressed else 0
         return verdict
 
+    def record(self, call: ToolCall, result: Any) -> None:
+        """Add an executed call and its (untrusted, bounded) result to the trace."""
+        view = _as_mapping(result)
+        self.history.append(
+            {
+                "tool": call.name,
+                "arguments": call.arguments,
+                "ok": not bool(view.get("isError")),
+                "result_excerpt": _excerpt(view),
+            }
+        )
+        del self.history[: -self.history_max]
+
     async def call(
         self,
         name: str,
@@ -169,15 +196,7 @@ class GateSession:
         if not verdict.may_execute:
             return GuardedResult(verdict, executed=False)
         result = await executor(call)
-        is_error = isinstance(result, Mapping) and bool(result.get("isError"))
-        self.history.append(
-            {
-                "tool": call.name,
-                "arguments": call.arguments,
-                "ok": not is_error,
-                "result_excerpt": _excerpt(result),
-            }
-        )
+        self.record(call, result)
         return GuardedResult(verdict, executed=True, result=result)
 
 

@@ -26,6 +26,7 @@ import typer
 import yaml
 from dotenv import load_dotenv
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from jev_reactor import __version__
@@ -79,9 +80,10 @@ JEV_TIMEOUT_SECONDS=1.0
 
 
 def fail(message: str, *, hint: str | None = None, code: int = 2) -> NoReturn:
-    err_console.print(f"[bold red]Error:[/] {message}", highlight=False)
+    # escape: messages and hints contain brackets (`jev-reactor[mcp]`) that are not Rich markup
+    err_console.print(f"[bold red]Error:[/] {escape(message)}", highlight=False)
     if hint:
-        err_console.print(f"[dim]{hint}[/]", highlight=False)
+        err_console.print(f"[dim]{escape(hint)}[/]", highlight=False)
     raise typer.Exit(code)
 
 
@@ -122,6 +124,25 @@ def main(
 ) -> None:
     # explicit path: dotenv's default search starts from *this package's* directory
     load_dotenv(dotenv_path=Path.cwd() / ".env", override=False)
+
+
+# ---------------------------------------------------------------------------- mcp
+
+
+@app.command(
+    "mcp",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    help="MCP gateway: serve | check | init. Same as `jev-reactor-mcp` (needs jev-reactor[mcp]).",
+)
+def mcp_command(ctx: typer.Context) -> None:
+    try:
+        from jev_reactor.mcp_server.cli import main as mcp_main
+    except ImportError:
+        fail(
+            "the MCP gateway needs the optional MCP dependencies.",
+            hint="pip install 'jev-reactor[mcp]'",
+        )
+    raise typer.Exit(mcp_main(list(ctx.args) or ["--help"]))
 
 
 # ---------------------------------------------------------------------------- init

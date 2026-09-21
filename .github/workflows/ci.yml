@@ -42,8 +42,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --extra dev
-      # pip-audit reports known vulnerabilities in the installed dependency set. The project
-      # itself is not on PyPI yet, so it is skipped with a note rather than failing the run.
+      # pip-audit reports known vulnerabilities in the installed dependency set (the project
+      # itself is skipped with a note if it is not resolvable on PyPI).
       - run: uv run pip-audit
 
   build:
@@ -63,3 +63,10 @@ jobs:
           /tmp/clean/bin/jev-reactor validate-pack packs/tool-loop.yaml
           /tmp/clean/bin/jev-reactor run examples/tool_loop.py --mock
           /tmp/clean/bin/jev-reactor replay examples/replay.jsonl --policy strict --dry-run
+      - name: Install with the MCP extra and run the gateway CLI
+        run: |
+          uv pip install --python /tmp/clean/bin/python "$(ls dist/*.whl)[mcp]"
+          cd /tmp/project
+          /tmp/clean/bin/jev-reactor-mcp init --demo -o gateway.yaml
+          /tmp/clean/bin/jev-reactor-mcp check gateway.yaml
+          /tmp/clean/bin/python -c "import jev_reactor.mcp_server.gateway"

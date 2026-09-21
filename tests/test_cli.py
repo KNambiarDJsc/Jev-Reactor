@@ -79,7 +79,11 @@ def test_version() -> None:
 
 
 def test_no_core_module_can_phone_home() -> None:
-    """No telemetry: only the TypeSafe adapter (and the SDK it wraps) may use the network."""
+    """No telemetry: only the TypeSafe adapter (and the SDK it wraps) may use the network.
+
+    The one other exception is the MCP gateway's connector to a downstream server URL that the
+    operator wrote in their own config (authenticated with headers they supplied).
+    """
     forbidden = re.compile(
         r"^\s*(import|from)\s+(httpx2?|requests|urllib\.request|http\.client|socket|aiohttp|websockets)\b",
         re.M,
@@ -87,7 +91,9 @@ def test_no_core_module_can_phone_home() -> None:
     offenders = [
         str(p.relative_to(ROOT))
         for p in (ROOT / "src" / "jev_reactor").rglob("*.py")
-        if p.name != "typesafe.py" and forbidden.search(p.read_text(encoding="utf-8"))
+        if p.name != "typesafe.py"
+        and p.relative_to(ROOT / "src" / "jev_reactor").as_posix() != "mcp_server/gateway.py"
+        and forbidden.search(p.read_text(encoding="utf-8"))
     ]
     assert offenders == []
 

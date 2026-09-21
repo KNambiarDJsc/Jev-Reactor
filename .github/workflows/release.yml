@@ -1,0 +1,46 @@
+name: Release
+
+# Publishes to PyPI when a version tag is pushed (git tag v0.2.1 && git push --tags).
+# Uses PyPI "trusted publishing" (OIDC): no API token is stored anywhere. One-time setup is
+# described in docs/releasing.md.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: The tag must match the package version
+        run: |
+          version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          test "v${version}" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != version v${version}"; exit 1; }
+      - run: uv sync --extra dev
+      - run: uv run ruff check . && uv run mypy && uv run pytest -q
+      - run: uv build
+      - run: uvx twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write      # trusted publishing
+      attestations: write  # build provenance
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

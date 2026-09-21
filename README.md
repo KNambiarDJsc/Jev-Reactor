@@ -4,7 +4,7 @@ An open-source runtime for real-time typed decisions. It uses Jev for parallel s
 judgments and ordinary code for policy, control flow, and side effects.
 
 ```bash
-pip install "git+https://github.com/KNambiarDJsc/Jev-Reactor"   # not on PyPI yet
+pip install jev-reactor                         # add [mcp] for the MCP gateway (below)
 jev-reactor init                                # copies examples, fixtures and packs here
 jev-reactor run examples/tool_loop.py --mock    # offline: recorded answers, no key, no network
 
@@ -98,6 +98,30 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+## MCP gateway: decide every tool call before it runs
+
+`jev-reactor-mcp` is a real [MCP](https://modelcontextprotocol.io) server that fronts your
+existing MCP servers. Every `tools/call` goes through the allowlist, your hard rules, Jev and
+your policy first; **a held-back call never reaches the downstream server**, and the agent gets
+a plain reason it can act on.
+
+```bash
+pip install "jev-reactor[mcp]"
+jev-reactor-mcp init --demo -o gateway.yaml   # fronts a safe fake invoice server, no API key
+jev-reactor-mcp serve gateway.yaml            # stdio: use it as a server in Claude, Cursor, ...
+```
+
+- Only tools you list are exposed; permissions, amount limits and the goal come from **your**
+  config, never from tool arguments.
+- Irreversible actions need the human's approval, asked through MCP elicitation and bound to the
+  exact call. A client that cannot be asked gets a held-back result, not a silent pass.
+- Tool descriptions that read like instructions to the model are withheld.
+- Serves stdio, or Streamable HTTP on loopback (a remote bind needs a bearer token).
+
+The demo uses a scripted stand-in for Jev, so it shows the mechanics and says nothing about what
+Jev would decide. Setup for Claude Desktop, Claude Code and Cursor, the config reference and the
+limits are in [docs/mcp.md](docs/mcp.md).
+
 ## The three question types
 
 | Type | Asks | Returns | Notes |
@@ -142,6 +166,7 @@ jev-reactor inspect <file>             pretty-print a fixture, event, pack or ru
 jev-reactor label <runs.jsonl> <event-id> --expected allow
 jev-reactor export-pack tool-loop      a built-in pack as YAML, to start your own
 jev-reactor bench [--live]             measure latency on your machine
+jev-reactor mcp serve|check|init       the MCP gateway (same as jev-reactor-mcp; needs [mcp])
 ```
 
 There is no telemetry and nothing is uploaded. A test checks that no core module can open a
@@ -183,16 +208,20 @@ them on your own labelled traces ([docs/policy-writing.md](docs/policy-writing.m
 - [Providers](docs/providers.md): the TypeSafe adapter, the mock, writing your own
 - [Question packs](docs/question-packs.md): writing questions Jev answers well, and the linter
 - [Policy writing](docs/policy-writing.md): bands, confidence, rule chains, calibration
+- [MCP gateway](docs/mcp.md): setup for Claude and Cursor, config reference, security model
 - [Deployment](docs/deployment.md): modes, deadlines, rate limits, privacy
 - [Design notes](docs/design-notes.md): what the docs and community changed, with sources
 
 ## Status and roadmap
 
-Version 0.1.0 is a local runtime and developer CLI; the API may change before 1.0.
+Version 0.2.0 adds the MCP gateway to the local runtime and developer CLI. The API may change
+before 1.0. **Live Jev has not been exercised by this project's automated tests or CI** (they
+run offline against recorded and scripted answers); run `jev-reactor bench --live` and the
+opt-in live test with your own key before depending on it.
 
 | Next | Not planned |
 |---|---|
-| Real MCP protocol adapter, TypeScript runtime, LangGraph middleware, OpenTelemetry spans, provider fallback chains, speculative prefetch | Anything that trains or distills a model on Jev output (prohibited by TypeSafe's terms), a hosted dashboard in this repository |
+| Advisory MCP decision tools, downstream resources and prompts in the gateway, TypeScript runtime, LangGraph middleware, OpenTelemetry spans, provider fallback chains, speculative prefetch | Anything that trains or distills a model on Jev output (prohibited by TypeSafe's terms), a hosted dashboard in this repository |
 
 ## License
 

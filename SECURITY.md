@@ -66,7 +66,11 @@ Only the latest release receives fixes while the project is pre-1.0.
 | A policy that defaults to allow | rule chains default to `review`; a policy returning an invalid decision degrades to `review` | `test_a_rule_chain_never_defaults_to_allow`, `test_property_allow_only_comes_from_one_specific_combination` |
 | Secrets in state, logs or records | redaction before every provider call and write; the API key scrubbed wherever it appears; SDK body logging pinned off; errors never include bodies | `tests/test_redaction.py`, `test_neither_key_nor_state_leaks_into_logs_or_errors` |
 | Raw state or goal text persisted | default persists a digest only; goal and raw payload are opt-in | `test_state_is_not_persisted_by_default_only_a_digest` |
-| Phone-home / telemetry | no core module imports a network library; only the TypeSafe adapter (and its SDK) can reach the network | `test_no_core_module_can_phone_home` |
+| A compromised or hostile MCP server (gateway) | only allowlisted tools are exposed; arguments validated against the downstream schema; instruction-like descriptions withheld; results are judged as context for the next call, not obeyed; downstream errors never reach the model raw | `test_only_allowlisted_tools_are_listed_and_callable`, `test_a_poisoned_tool_description_is_withheld_before_the_model_sees_it`, `test_an_injected_tool_result_holds_back_the_next_call` |
+| A model granting itself approval or permission (gateway) | permissions, denials, amount limits and the goal come from host config; approval only from the human via elicitation | `test_approval_can_never_be_claimed_in_the_arguments_or_the_meta`, `test_a_call_without_the_required_permission_never_reaches_the_server` |
+| A forged, replayed or tampered approval (gateway) | the answer counts only with request state the gateway sealed for that exact call (session, tool, arguments) | `test_a_bare_approval_answer_with_no_sealed_state_is_ignored_and_the_user_is_asked`, `test_an_approval_for_one_call_cannot_be_replayed_onto_another`, `test_tampered_request_state_is_rejected_by_the_sdk_boundary` |
+| An exposed HTTP gateway | loopback-only unless `--allow-remote`, which needs a bearer token; DNS-rebinding protection; stdout never written in stdio mode | `test_a_non_loopback_listen_address_is_refused_without_allow_remote`, `test_a_bearer_token_is_enforced_on_the_wire`, `test_a_foreign_host_header_is_rejected_by_dns_rebinding_protection` |
+| Phone-home / telemetry | no core module imports a network library; only the TypeSafe adapter (and its SDK) and the MCP gateway's connector to a downstream URL *you* configured can reach the network | `test_no_core_module_can_phone_home` |
 
 ## Hardening checklist for deployers
 
@@ -81,6 +85,10 @@ Only the latest release receives fixes while the project is pre-1.0.
 - [ ] Keep decision logs private; they contain TypeSafe Output and must not be used to train or
       distill a model.
 - [ ] Run the agent under OS-level isolation. This library is a gate, not a sandbox.
+- [ ] MCP gateway: list only the tools the task needs, set `goal`, keep irreversible tools
+      `irreversible` with `approvals: {mode: elicit}` (or `deny`), and use
+      `description_mode: host` for servers you do not control. Over HTTP, keep loopback, or put
+      real authentication in front and set `require_session_key: true`.
 
 ## Data handling
 
